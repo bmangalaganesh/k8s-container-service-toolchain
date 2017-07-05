@@ -7,41 +7,41 @@ template:
   description:
     $ref: "#/messages/template.description"
   header: '![](toolchain.svg?localize)'
-  icon: secure-lock-kubernetes.svg
+  icon: simple-java-microservices.svg
   required:
-    - hello-world-build
-    - hello-world-repo
+    - simple-java-microservice-build
+    - sample-java-microservice-repo
   info:
     git url: >-
-      [https://github.com/open-toolchain/secure-kube-toolchain](https://github.com/open-toolchain/secure-kube-toolchain)
+      [https://github.com/LinkGroupDigitalPlatformPoC/my-simple-toolchain](https://github.com/LinkGroupDigitalPlatformPoC/my-simple-toolchain)
     git branch: >-
-      [master](https://github.com/open-toolchain/secure-kube-toolchain/tree/master)
+      [master](https://github.com/LinkGroupDigitalPlatformPoC/my-simple-toolchain/tree/master)
 toolchain:
-  name: 'secure-kubernetes-toolchain-{{timestamp}}'
+  name: 'simple-java-microservices-toolchain-{{timestamp}}'
   template:
     getting_started:
       $ref: "#/messages/template.gettingStarted" 
 services:
-  hello-world-repo:
+  sample-java-microservice-repo:
     service_id: hostedgit
     parameters:
-      repo_name: 'hello-containers-{{timestamp}}'
-      repo_url: 'https://github.com/open-toolchain/hello-containers'
+      repo_name: 'sample-java-microservice-{{timestamp}}'
+      repo_url: 'https://github.com/LinkGroupDigitalPlatformPoC/aaspire-membermgmt-service'
       type: clone
       has_issues: true
       enable_traceability: true
-  hello-world-build:
+  simple-java-microservice-build:
     service_id: pipeline
     parameters:
       services:
-        - hello-world-repo
-      name: 'hello-world-{{timestamp}}'
+        - sample-java-microservice-repo
+      name: 'simple-java-microservice-{{timestamp}}'
       ui-pipeline: true
       configuration:
         content:
           $text: pipeline.yml
         env:
-          GIT_REPO: hello-world-repo
+          GIT_REPO: sample-java-microservice-repo
           CF_APP_NAME: '{{form.pipeline.parameters.app-name}}'
           PROD_SPACE_NAME: '{{form.pipeline.parameters.prod-space}}'
           PROD_ORG_NAME: '{{form.pipeline.parameters.prod-organization}}'
@@ -54,6 +54,6 @@ services:
 form:
   pipeline:
     parameters:
-      app-name: '{{services.hello-world-repo.parameters.repo_name}}'
+      app-name: '{{services.sample-java-microservice-repo.parameters.repo_name}}'
     schema:
       $ref: deploy.json

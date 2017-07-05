@@ -1,4 +1,4 @@
-# ![Icon](./.bluemix/secure-lock-kubernetes.png) Secure Kubernetes toolchain
+# ![Icon](./.bluemix/secure-lock-kubernetes.png) Simple Toolchain for Java Based Microservice
 
 
 ### Continuously deliver a secure Docker app to a Bluemix Kubernetes Cluster
@@ -7,7 +7,7 @@ This Hello World application uses Docker with Node.js and includes a DevOps tool
 ![Icon](./.bluemix/toolchain.png)
 
 ### To get started, click this button:
-[![Deploy To Bluemix](https://console.bluemix.net/devops/graphics/create_toolchain_button.png)](https://console.bluemix.net/devops/setup/deploy/?repository=https%3A//github.com/open-toolchain/secure-kube-toolchain)
+[![Deploy To Bluemix](https://console.bluemix.net/devops/graphics/create_toolchain_button.png)](https://console.bluemix.net/devops/setup/deploy/?repository=https%3A//github.com/LinkGroupDigitalPlatformPoC/my-simple-toolchain)
 
 ---
 ### Learn more 

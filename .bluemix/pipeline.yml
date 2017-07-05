@@ -1,148 +1,319 @@
 ---
 stages:
-- name: BUILD
+- name: Build
   inputs:
-  - type: git
+  - url: https://github.com/LinkGroupDigitalPlatformPoC/aaspire-membermgmt-service.git
+    type: git
     branch: master
-    service: ${GIT_REPO}    
-  triggers:
-  - type: commit
+    dir_name: null
+  properties:
+  - name: LOGICAL_APP_NAME
+    value: Member Management
+    type: text
+  - name: BUILD_PREFIX
+    value: master
+    type: text
+  - name: EXTENSION_DEBUG
+    value: '1'
+    type: text
   jobs:
-  - name: Container build
+  - name: Unit tests
+    type: tester
+    enable_tests: true
+    test_file_pattern: target/surefire-reports/*.xml
+    extension_id: ibm.devops.services.pipeline.dra_upload_results
+    ADDITIONAL_LIFE_CYCLE_STAGE_SELECT: none
+    COMMAND: "#!/bin/bash\nexport JAVA_HOME=/opt/IBM/java8\n\nmvn -B test \n\n#List\
+      \ the contents of the current directory\n#ls -alt\n\n#List the contents of the\
+      \ surefire-reports directory\n#echo \"switching to the surefire reports directory\"\
+      \n#cd target/surefire-reports\n#ls -atl\n\n#echo -e \"\\nSwitching back to base\
+      \ directory\"\n#cd ../..\n"
+    LIFE_CYCLE_STAGE_SELECT: unittest
+    LOG_FILE: target/surefire-reports/*.xml
+  - name: Build
     type: builder
-    extension_id: ibm.devops.services.pipeline.container.builder
-    target:
-      region_id: ${PROD_REGION_ID}
-      organization: ${PROD_ORG_NAME}
-      space: ${PROD_SPACE_NAME}
-    IMAGE_NAME: ${CF_APP_NAME}
-    USE_CACHED_LAYERS: 'true'
-    COMMAND: |
+    artifact_dir: target
+    build_type: maven
+    script: |+
       #!/bin/bash
-      # The following colors have been defined to help with presentation of logs: green, red, label_color, no_color.  
-      echo -e "${label_color}Starting build script${no_color}"
-      
-      # The IBM Container Service CLI (ice), Git client (git), IDS Inventory CLI (ids-inv) and Python 2.7.3 (python) have been installed.
-      # Based on the organization and space selected in the Job credentials are in place for both IBM Container Service and IBM Bluemix 
-      #####################
-      # Run unit tests    #
-      #####################
-      echo -e "${label_color}No unit tests cases have been checked in ${no_color}"
-      
-      ######################################
-      # Build Container via Dockerfile     #
-      ######################################
-      
-      # REGISTRY_URL=${CCS_REGISTRY_HOST}/${NAMESPACE}
-      # FULL_REPOSITORY_NAME=${REGISTRY_URL}/${IMAGE_NAME}:${APPLICATION_VERSION}   
-      
-      # Possible adding retries to build the image
-      if [ -f Dockerfile ]; then 
-          echo -e "${label_color}BUILDING ${FULL_REPOSITORY_NAME} ${no_color}"
-          ${EXT_DIR}/utilities/sendMessage.sh -l info -m "New container build requested for ${FULL_REPOSITORY_NAME}"
-          # build image
-          BUILD_COMMAND=""
-          if [ "${USE_CACHED_LAYERS}" == "true" ]; then 
-              BUILD_COMMAND="build --pull --tag ${FULL_REPOSITORY_NAME} ${WORKSPACE}"
-              ice_retry ${BUILD_COMMAND}
-              RESULT=$?
-          else 
-              BUILD_COMMAND="build --no-cache --tag ${FULL_REPOSITORY_NAME} ${WORKSPACE}"
-              ice_retry ${BUILD_COMMAND}
-              RESULT=$?
-          fi 
-      
-          if [ $RESULT -ne 0 ]; then
-              echo -e "${red}Error building image ${no_color}" | tee -a "$ERROR_LOG_FILE"
-              echo "Build command: ice ${BUILD_COMMAND}"
-              ice info 
-              ice images
-              ${EXT_DIR}/print_help.sh
-              ${EXT_DIR}/utilities/sendMessage.sh -l bad -m "Container build of ${FULL_REPOSITORY_NAME} failed"
-              exit 1
-          else
-              ${EXT_DIR}/utilities/sendMessage.sh -l good -m "Container build of ${FULL_REPOSITORY_NAME} was successful"
-              echo -e "${green}Container build of ${FULL_REPOSITORY_NAME} was successful ${no_color}"
-          fi  
-      else 
-          echo -e "${red}Dockerfile not found at the repository root${no_color}"
-          exit 1
-      fi  
-      
-      ######################################################################################
-      # Copy any artifacts that will be needed for deployment and testing to $WORKSPACE    #
-      ######################################################################################
-      echo "IMAGE_NAME=${FULL_REPOSITORY_NAME}" >> $ARCHIVE_DIR/build.properties
-      if [ -f deployment.yml ]; then
-          #Update deployment.yml with image name
-          echo "UPDATING DEPLOYMENT MANIFEST:"
-          sed -i "s~^\([[:blank:]]*\)image:.*$~\1image: ${FULL_REPOSITORY_NAME}~" deployment.yml
-          cat deployment.yml
-          cp deployment.yml $ARCHIVE_DIR/
-      else 
-          echo -e "${red}Kubernetes deployment file 'deployment.yml' not found at the repository root${no_color}"
-          exit 1
-      fi      
-- name: VALIDATE
+      export JAVA_HOME=/opt/IBM/java8
+
+      #Skip the test execution as they have already been executed in the first job - Unit tests
+      #Copy the manifest file to the target directory
+      #Copy the postman test files (test and environment config files)
+      mvn -B package -Dmaven.test.skip=true && cp manifest.yml target/ && cp src/test/postman/*.json target/
+
+  - name: Check UnitTest Success Percentage
+    type: tester
+    extension_id: ibm.devops.services.pipeline.dra_devops_gate
+    CRITERIA: Member Mgmt Services - Unit Tests Only
+  - name: Static Code Analysis
+    type: tester
+    extension_id: ibm.devops.services.pipeline.appscan.static.builder
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-dev
+    WAIT_TIME: '5'
+    SETUP_SERVICE_SPACE: 'false'
+- name: DEV
   inputs:
   - type: job
-    stage: BUILD
-    job: Container build
+    stage: Build
+    job: Build
+    dir_name: null
   triggers:
   - type: stage
   properties:
-  - name: FULL_REPOSITORY_NAME
-    value: ''
-    type: text  
+  - name: LOGICAL_ENV_NAME
+    value: DEV
+    type: text
+  - name: LOGICAL_APP_NAME
+    value: Member Management
+    type: text
+  - name: BUILD_PREFIX
+    value: master
+    type: text
+  - name: EXTENSION_DEBUG
+    value: '1'
+    type: text
   jobs:
-  - name: Vulnerability Advisor
-    type: tester
-    extension_id: ibm.devops.services.pipeline.crawler.tester
-    target:
-      region_id: ${PROD_REGION_ID}
-      organization: ${PROD_ORG_NAME}
-      space: ${PROD_SPACE_NAME}
-    WAIT_TIME: '5'
-- name: DEPLOY
-  inputs:
-  - type: job
-    stage: BUILD
-    job: Container build
-  jobs:
-  - name: Deploy Kubernetes Pod
+  - name: Deploy
     type: deployer
     target:
-      region_id: ${PROD_REGION_ID}
-      organization: ${PROD_ORG_NAME}
-      space: ${PROD_SPACE_NAME}
-      api_key: ${API_KEY}
-      kubernetes_cluster: ${PROD_CLUSTER_NAME}
-    script: |
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-dev
+      application: member-mgmt-services
+    script: "#!/bin/bash\n\n# Push app (no start)\nexport CF_APP_NAME=\"dev-$CF_APP\"\
+      \ncf push \"${CF_APP_NAME}\" --no-start\n\n#Set the profile that is used in\
+      \ this space- Retrieve it from environment variable\n#instead of hardcoding\
+      \ it within the script\ncf set-env ${CF_APP_NAME} JAVA_OPTS \"-Dspring.profiles.active=dev\"\
+      \n\n#Start the app as we specified no-start when the CF PUSH was executed\n\
+      cf start ${CF_APP_NAME}\n\n "
+- name: TEST/STAGING
+  inputs:
+  - type: job
+    stage: Build
+    job: Build
+    dir_name: null
+  triggers:
+  - type: stage
+  properties:
+  - name: LOGICAL_ENV_NAME
+    value: STAGING
+    type: text
+  - name: LOGICAL_APP_NAME
+    value: Member Management
+    type: text
+  - name: BUILD_PREFIX
+    value: master
+    type: text
+  - name: EXTENSION_DEBUG
+    value: '1'
+    type: text
+  jobs:
+  - name: Staging Gate
+    type: tester
+    extension_id: ibm.devops.services.pipeline.dra_devops_gate
+    CRITERIA: Member Mgmt Services - 100 Percent Unit Tests Success
+  - name: Deploy
+    type: deployer
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-test
+      application: member-mgmt-services
+    script: "#!/bin/bash\n\n# Push app (no start)\nexport CF_APP_NAME=\"test-$CF_APP\"\
+      \ncf push \"${CF_APP_NAME}\" --no-start\n\n#Set the profile that is used in\
+      \ this space- Retrieve it from environment variable\n#instead of hardcoding\
+      \ it within the script\ncf set-env ${CF_APP_NAME} JAVA_OPTS \"-Dspring.profiles.active=test\"\
+      \n\n#Start the app as we specified no-start when the CF PUSH was executed\n\
+      cf start ${CF_APP_NAME}\n\n "
+  - name: Newman API Functional tests
+    type: tester
+    enable_tests: true
+    test_file_pattern: ./newmanreport.xml
+    extension_id: ibm.devops.services.pipeline.dra_upload_results
+    ADDITIONAL_LIFE_CYCLE_STAGE_SELECT: none
+    COMMAND: "#!/bin/bash\n\n#!/bin/bash\n\nexport NVM_DIR=/home/pipeline/nvm\nexport\
+      \ NODE_VERSION=7.0.0\nexport NVM_VERSION=0.33.0\n\nnpm config delete prefix\
+      \ \\\n  && curl https://raw.githubusercontent.com/creationix/nvm/v${NVM_VERSION}/install.sh\
+      \ | sh \\\n  && . $NVM_DIR/nvm.sh \\\n  && nvm install $NODE_VERSION \\\n  &&\
+      \ nvm alias default $NODE_VERSION \\\n  && nvm use default \\\n  && node -v\
+      \ \\\n  && npm -v \n\nnpm install\n\nnpm install newman --global;\n\n# invoke\
+      \ tests here\n#Using newman to test the APIs exposed by the microservices app\n\
+      #Asking it to generate a specific output file -newmanreport.xml in the current\
+      \ directory\n\nnewman run member-mgmt-services-apitest.postman_collection.json\
+      \ -e member-mgmt-services-apitest.postman_environment-test.json  --reporter-junit-export\
+      \ newmanreport.xml --reporter junit\n\n#Listing the file contents after the\
+      \ test execution\nls -alt"
+    LIFE_CYCLE_STAGE_SELECT: fvt
+    LOG_FILE: ./newmanreport.xml
+- name: PRODUCTION
+  inputs:
+  - type: job
+    stage: Build
+    job: Build
+    dir_name: null
+  properties:
+  - name: LOGICAL_APP_NAME
+    value: Member Management
+    type: text
+  - name: LOGICAL_ENV_NAME
+    value: PRODUCTION
+    type: text
+  - name: EXTENSION_DEBUG
+    value: '1'
+    type: text
+  - name: BUILD_PREFIX
+    value: master
+    type: text
+  jobs:
+  - name: Prod Gate
+    type: tester
+    extension_id: ibm.devops.services.pipeline.dra_devops_gate
+    CRITERIA: Member Mgmt Services - 100 Percent Functional Tests Success
+  - name: Blue/Green Deploy
+    type: deployer
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-prod
+      application: member-mgmt-services
+    script: "#!/bin/bash\n\nif ! cf app $CF_APP; then\n  cf push $CF_APP --no-start\n\
+      \  cf set-env ${CF_APP} JAVA_OPTS \"-Dspring.profiles.active=prod\" \n  cf start\
+      \ ${CF_APP}\nelse\n  OLD_CF_APP=${CF_APP}-OLD-$(date +\"%s\")\n  rollback()\
+      \ {\n    set +e\n    if cf app $OLD_CF_APP; then\n      cf logs $CF_APP --recent\n\
+      \      cf delete $CF_APP -f\n      cf rename $OLD_CF_APP $CF_APP\n    fi\n \
+      \   exit 1\n  }\n  set -e\n  trap rollback ERR\n  cf rename $CF_APP $OLD_CF_APP\n\
+      \  cf push $CF_APP --no-start\n  cf set-env ${CF_APP} JAVA_OPTS \"-Dspring.profiles.active=prod\"\
+      \ \n  cf start ${CF_APP}\n  cf delete $OLD_CF_APP -f\nfi"
+- name: Create Incidents
+  inputs:
+  - type: job
+    stage: Build
+    job: Build
+    dir_name: null
+  jobs:
+  - name: Deploy
+    type: deployer
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-test
+      application: member-mgmt-services
+    script: "#!/bin/bash\n\n#Remove this line before...\n#This is just to simulate\
+      \ the PagerDuty Integration\nLetthisfail\n\n\n\n# Push app (no start)\nexport\
+      \ CF_APP_NAME=\"test-$CF_APP\"\ncf push \"${CF_APP_NAME}\" --no-start\n\n#Set\
+      \ the profile that is used in this space- Retrieve it from environment variable\n\
+      #instead of hardcoding it within the script\ncf set-env ${CF_APP_NAME} JAVA_OPTS\
+      \ \"-Dspring.profiles.active=test\"\n\n#Start the app as we specified no-start\
+      \ when the CF PUSH was executed\ncf start ${CF_APP_NAME}\n\n \n"
+  - name: Newman API tests
+    type: tester
+    script: |-
       #!/bin/bash
-      set -x
+      # invoke tests here
+      #Using newman to test the APIs exposed by the microservices app
 
-      #Check cluster availability
-      ip_addr=$(bx cs workers $PIPELINE_KUBERNETES_CLUSTER_NAME | grep normal | awk '{ print $2 }')
-      if [ -z $ip_addr ]; then
-        echo "$PIPELINE_KUBERNETES_CLUSTER_NAME not created or workers not ready"
-        exit 1
+      newman run member-mgmt-services-apitest.postman_collection.json -e member-mgmt-services-apitest.postman_environment-test.json
+
+      #
+      #
+    enable_tests: true
+    test_file_pattern: tests/TEST-*.xml
+  - name: Sauce Labs Tests
+    type: tester
+    extension_id: ibm.devops.services.pipeline.saucelabs
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-test
+    DL_ASSETS: 'true'
+    COMMAND: |-
+      #!/bin/bash
+      GRUNTFILE="tests/Gruntfile.js"
+      if [ -f $GRUNTFILE ]; then
+        npm install
+        echo $APP_URL | grep "stage1"
+        if [ $? -eq 0 ]; then
+          grunt test_fake --gruntfile $GRUNTFILE --base .
+        else
+          grunt test_real --gruntfile $GRUNTFILE --base .
+        fi
+      else
+        echo "$GRUNTFILE not found."
       fi
+    SELECT_CMD: custom
+  - name: Functional Tests
+    type: tester
+    extension_id: ibm.devops.services.pipeline.dra_upload_results
+    ADDITIONAL_LIFE_CYCLE_STAGE_SELECT: none
+    COMMAND: |-
+      #!/bin/bash
+      GRUNTFILE="tests/Gruntfile.js"
+      if [ -f $GRUNTFILE ]; then
+        npm install
+        echo $APP_URL | grep "stage1"
+        if [ $? -eq 0 ]; then
+          grunt test_fake --gruntfile $GRUNTFILE --base .
+        else
+          grunt test_real --gruntfile $GRUNTFILE --base .
+        fi
+      else
+        echo "$GRUNTFILE not found."
+      fi
+    LIFE_CYCLE_STAGE_SELECT: fvt
+    LOG_FILE: ./xunit.xml
+- name: PRODUCTION [copy]
+  inputs:
+  - type: job
+    stage: Build
+    job: Build
+    dir_name: null
+  jobs:
+  - name: Production Gate
+    type: tester
+    enable_tests: true
+    test_file_pattern: tests/TEST-*.xml
+    extension_id: ibm.devops.services.pipeline.dra_devops_gate
+    CRITERIA: PRODUCTION Deployment Checks (func test only)
+    ENVIRONMENT: test
+  - name: Blue/Green Deploy
+    type: deployer
+    target:
+      region_id: ibm:yp:us-south
+      organization: Manglu-IBM-Org
+      space: linkgrouppoc-prod
+      application: member-mgmt-services
+    script: |-
+      #!/bin/bash
 
-      #Connect to a different container-service api by uncommenting and specifying an api endpoint
-      #bx cs init --host https://us-south.containers.bluemix.net
-      echo ""
-      echo "DEPLOYING USING MANIFEST:"
-      cat deployment.yml
-      kubectl apply -f deployment.yml  
+      cf set-env ${CF_APP} JAVA_OPTS "-Dspring.profiles.active=prod"
 
-      echo ""
-      echo "DEPLOYED SERVICE:"
-      kubectl describe services hello-service
+      if ! cf app $CF_APP; then
+        cf push $CF_APP
+      else
+        OLD_CF_APP=${CF_APP}-OLD-$(date +"%s")
+        rollback() {
+          set +e
+          if cf app $OLD_CF_APP; then
+            cf logs $CF_APP --recent
+            cf delete $CF_APP -f
+            cf rename $OLD_CF_APP $CF_APP
+          fi
+          exit 1
+        }
+        set -e
+        trap rollback ERR
+        cf rename $CF_APP $OLD_CF_APP
+        cf push $CF_APP
+        cf delete $OLD_CF_APP -f
+      fi
+hooks:
+- enabled: true
+  label: null
+  ssl_enabled: false
+  url: https://devops-api.ng.bluemix.net/v1/messaging/webhook/publish
 
-      echo ""
-      echo "DEPLOYED PODS:"
-      kubectl describe pods --selector app=hello-app
-
-      port=$(kubectl get services | grep hello-service | sed 's/.*:\([0-9]*\).*/\1/g')
-      echo ""
-      echo "VIEW THE APPLICATION AT: http://$ip_addr:$port"

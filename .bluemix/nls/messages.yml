@@ -1,14 +1,16 @@
 ---
 #The format for creating a link with a URL and text is [link text](link url) with no spaces or characters between the two sets of brackets- []()
 template.name: "Secure Kubernetes toolchain"
-template.description: "With this toolchain, you can develop, and deploy an application securely into a Kubernetes cluster managed by the IBM Bluemix Container Service. By default, the toolchain uses a sample Node.js \"Hello World\" app, but you can link to your own GitHub repository instead. This toolchain is preconfigured for continuous delivery with [Vulnerability Advisor](https://www.ibm.com/blogs/bluemix/2016/06/docker-container-security-with-vulnerability-advisor/), source control, issue tracking, and online editing.\n\n **First-time IBM Bluemix Containers Service users**: Make sure that your container image registry is correctly set up with a [namespace](https://console.bluemix.net/docs/services/Registry/index.html). You can manage your Bluemix Container clusters in the [console](https://console.ng.bluemix.net/docs/containers/cs_cluster.html#cs_cluster).\n\nThis toolchain uses tools that are part of the Continuous Delivery service. If an instance of that service isn't already in your organization, when you click **Create**, it is automatically added at no cost to you. For more information and terms, see the [Bluemix catalog](/catalog/services/continuous-delivery/).\n\nTo get started, click **Create**."
-template.gettingStarted: " **Your toolchain is ready!**\n**Quick start:** Commit a change to the Git repo to trigger a new build and deployment and check for container security vulnerabilities. For step-by-step instructions, see the [tutorial](https://www.ibm.com/devops/method/tutorials/tc_secure_kube?task=2) for this toolchain."
+template.description: "With this toolchain, you can develop, and deploy a microservices application as a Cloud Foundry app in the IBM Bluemix Platfor Service. By default, the toolchain uses a sample java (springboot)  \"Member Management Services\" app, but you can link to your own GitHub repository instead. This toolchain is preconfigured for continuous delivery with [ source control, issue tracking, and online editing.\n\n **Developer Insights provides a comprehensive way to explore your project’s development risk. You can identify files with high error proneness and get a compliance view of the project against DevOps practices. Team Dynamics employs social coding analysis to identify the level of interaction between team members so that the team can fix unproductive practices.\n\nAfter you create the toolchain, DevOps Insights starts to mine the GitHub repo and associated issues. The initial mining process can take minutes to hours depending on the size of the repo and the number of issues. After data mining and analysis is complete, you can access the developer and team insights for your project from DevOps Insights in the toolchain.\n\nTo get started, click **Create**."
+template.gettingStarted: " **Your toolchain is ready!**\n**Quick start:** Commit a change to the Git repo to trigger a new build and deployment."
 deploy.title: "Hello World Deploy Stage"
-deploy.description: "hello-world simple toolchain"
+deploy.description: "simple java microservices toolchain"
 deploy.longDescription: "The Delivery Pipeline automates continuous deployment."
-deploy.appDescription: "The name of your Hello World app"
+deploy.appDescription: "The name of your java microservice"
 deploy.appName: "App name"
 region: "Region"
 organization: "Organization"
 space: "Space"
 prodStage: "Production stage"
+
+

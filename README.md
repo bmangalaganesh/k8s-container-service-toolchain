@@ -11,9 +11,11 @@ This Java based microservice (built using Spring Boot)includes a DevOps toolchai
 ---
 ### Learn more 
 
+<!--- 
 * Blog [Continuously deliver your app to Kubernetes with Bluemix](tbd)
-<!--- * Step by step [tutorial](https://www.ibm.com/devops/method/tutorials/tc_secure_kube)
+* Step by step [tutorial](https://www.ibm.com/devops/method/tutorials/tc_secure_kube)
 * **First-time IBM Container Service users**: Make sure that your container image registry is correctly set up with a [namespace](https://console.bluemix.net/docs/services/Registry/index.html).
-* [Getting started with Bluemix clusters](https://console.bluemix.net/docs/containers/container_index.html?pos=2) --->
+* [Getting started with Bluemix clusters](https://console.bluemix.net/docs/containers/container_index.html?pos=2) 
+--->
 * [Getting started with toolchains](https://bluemix.net/devops/getting-started)
 * [Documentation](https://console.ng.bluemix.net/docs/services/ContinuousDelivery/index.html?pos=2)

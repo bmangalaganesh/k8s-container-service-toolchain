@@ -1,7 +1,7 @@
-### Simple Toolchain for Java Based Microservice
+### Simple Toolchain to deploy a Java Based Microservice on a Kubernetes Cluster
 
-### Continuously deliver a Java based microservice as a Cloud Foundry app to Bluemix
-This Java based microservice (built using Spring Boot)includes a DevOps toolchain that is preconfigured for continuous delivery with source control, issue tracking, and DevOps Insights and deployment to the IBM Bluemix.
+### Continuously deliver a Java based microservice as a Docker app to Kube Clusters on Bluemix.
+This Java based microservice (built using Spring Boot)includes a DevOps toolchain that is preconfigured for continuous delivery with source control, issue tracking, and DevOps Insights and deployment to the IBM Container Services.
 
 ![Icon](./.bluemix/toolchain.png)
 
